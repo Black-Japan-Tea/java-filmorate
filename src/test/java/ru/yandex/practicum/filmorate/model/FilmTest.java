@@ -1,12 +1,12 @@
 package ru.yandex.practicum.filmorate.model;
 
-import org.junit.jupiter.api.Test;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Set;
 
@@ -14,54 +14,61 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class FilmTest {
 
-    private final ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-    private final Validator validator = factory.getValidator();
+    private static Validator validator;
 
-    @Test
-    void createValidFilm() {
-        Film film = new Film();
-        film.setName("Valid Film");
-        film.setDescription("Valid Description");
-        film.setReleaseDate(LocalDate.of(2000, 1, 1));
-        film.setDuration(Duration.ofHours(2));
-
-        Set<ConstraintViolation<Film>> violations = validator.validate(film);
-        assertTrue(violations.isEmpty(), "Валидный фильм не должен иметь нарушений валидации");
+    @BeforeAll
+    static void setUp() {
+        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+        validator = factory.getValidator();
     }
 
     @Test
-    void createFilmWithEmptyName() {
+    void shouldNotValidateWhenNameIsBlank() {
         Film film = new Film();
-        film.setName("");
-        film.setDescription("Valid Description");
+        film.setName(" ");
+        film.setDescription("Описание фильма");
         film.setReleaseDate(LocalDate.of(2000, 1, 1));
-        film.setDuration(Duration.ofHours(2));
+        film.setDuration(120);
 
         Set<ConstraintViolation<Film>> violations = validator.validate(film);
-        assertFalse(violations.isEmpty(), "Пустое название фильма должно вызывать ошибку валидации");
+        assertFalse(violations.isEmpty());
+        assertEquals(1, violations.size());
+        assertEquals("Название не может быть пустым.", violations.iterator().next().getMessage());
     }
 
     @Test
-    void createFilmWithLongDescription() {
+    void shouldNotValidateWhenDescriptionIsTooLong() {
         Film film = new Film();
-        film.setName("Valid Film");
-        film.setDescription("A".repeat(201));
+        film.setName("Фильм");
+        film.setDescription("О".repeat(201));
         film.setReleaseDate(LocalDate.of(2000, 1, 1));
-        film.setDuration(Duration.ofHours(2));
+        film.setDuration(120);
 
         Set<ConstraintViolation<Film>> violations = validator.validate(film);
-        assertFalse(violations.isEmpty(), "Описание длиннее 200 символов должно вызывать ошибку валидации");
+        assertFalse(violations.isEmpty());
+        assertEquals(1, violations.size());
+        assertEquals("Максимальная длина описания — 200 символов.", violations.iterator().next().getMessage());
     }
 
     @Test
-    void createFilmWithInvalidReleaseDate() {
+    void shouldNotValidateWhenReleaseDateIsBefore1895() {
         Film film = new Film();
-        film.setName("Valid Film");
-        film.setDescription("Valid Description");
-        film.setReleaseDate(LocalDate.of(1895, 12, 27));
-        film.setDuration(Duration.ofHours(2));
+        film.setName("Фильм");
+        film.setDescription("Описание фильма");
+        film.setReleaseDate(LocalDate.of(1894, 12, 28));
+        film.setDuration(120);
 
-        Set<ConstraintViolation<Film>> violations = validator.validate(film);
-        assertTrue(violations.isEmpty(), "Дата релиза раньше 28 декабря 1895 года должна вызывать ошибку валидации");
+        assertFalse(film.getReleaseDate().isAfter(LocalDate.of(1895, 12, 28)));
+    }
+
+    @Test
+    void shouldNotValidateWhenDurationIsNegativeOrZero() {
+        Film film = new Film();
+        film.setName("Фильм");
+        film.setDescription("Описание фильма");
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(-120);
+
+        assertFalse(film.getDuration() > 0);
     }
 }

@@ -6,11 +6,13 @@ import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestController
+@RequestMapping("/users")
 @Slf4j
 public class UserController {
 
@@ -18,68 +20,48 @@ public class UserController {
 
     @GetMapping
     public Collection<User> getAllUsers() {
-        log.info("Запрос на отображение всех пользователей ({}).", users);
+        log.info("Запрос на получение всех пользователей");
         return users.values();
     }
 
     @PostMapping
     public User addUser(@Valid @RequestBody User user) {
-
-        log.info("Запрос на добавление пользователя с id = {}", user.getId());
-
-        if (user.getLogin().contains(" ")) {
-            log.warn("Ошибка добавления нового пользователя: логин не может содержать пробелы.",
-                    new ValidationException("Логин не может содержать пробелы."));
-        }
-
-        if (user.getName().isEmpty()) {
+        validateUser(user);
+        if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
+            log.info("Имя пользователя не указано при добавлении. В качестве имени будет использован логин.");
         }
-
         user.setId(getNextId());
         users.put(user.getId(), user);
         log.info("Пользователь с id = {} успешно добавлен", user.getId());
-
         return user;
     }
 
     @PutMapping
-    public User updateUser(@Valid @RequestBody User newUser) {
-
-        log.info("Запрос на обновление пользователя с id = {}", newUser.getId());
-
-        if (newUser.getLogin().contains(" ")) {
-            log.warn("Ошибка обновления пользователя: логин не может содержать пробелы.",
-                    new ValidationException("Логин не может содержать пробелы."));
+    public User updateUser(@Valid @RequestBody User user) {
+        if (user.getId() == null || !users.containsKey(user.getId())) {
+            log.warn("Пользователь с id = {} не найден", user.getId());
+            throw new ValidationException("Пользователь с указанным id не существует.");
         }
-
-        if (newUser.getName().isEmpty()) {
-            newUser.setName(newUser.getLogin());
-            log.info("Пользователь с id = {} не указал имя. В качестве имени будет использован его логин.", newUser.getId());
+        validateUser(user);
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+            log.info("Имя пользователя не указано при обновлении. В качестве имени будет использован логин.");
         }
+        users.put(user.getId(), user);
+        log.info("Пользователь с id = {} успешно обновлен", user.getId());
+        return user;
+    }
 
-        if (users.containsKey(newUser.getId())) {
-            User oldUser = users.get(newUser.getId());
-
-            if (!oldUser.getName().equals(newUser.getName())) {
-                oldUser.setName(newUser.getName());
-            }
-            if (!oldUser.getBirthday().equals(newUser.getBirthday())) {
-                oldUser.setBirthday(newUser.getBirthday());
-            }
-            if (!oldUser.getLogin().equals(newUser.getLogin())) {
-                oldUser.setLogin(newUser.getLogin());
-            }
-            if (!oldUser.getEmail().equals(newUser.getEmail())) {
-                oldUser.setEmail(newUser.getEmail());
-            }
-            log.info("Пользователь с id = {} успешно обновлён", newUser.getId());
-
-            return oldUser;
+    private void validateUser(User user) {
+        if (user.getLogin().contains(" ")) {
+            log.warn("Ошибка валидации: логин не может содержать пробелы.");
+            throw new ValidationException("Логин не может содержать пробелы.");
         }
-
-        log.warn("Ошибка обновления данных о пользователе. Пользователя с id = {} нет.", newUser.getId());
-        throw new ValidationException("Пользователь с id = " + newUser.getId() + " не найден.");
+        if (user.getBirthday().isAfter(LocalDate.now())) {
+            log.warn("Ошибка валидации: дата рождения не может быть в будущем.");
+            throw new ValidationException("Дата рождения не может быть в будущем.");
+        }
     }
 
     private long getNextId() {
