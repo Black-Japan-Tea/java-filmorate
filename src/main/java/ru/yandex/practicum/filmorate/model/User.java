@@ -14,6 +14,7 @@ public class User {
     String name;
 
     @PastOrPresent(message = "Дата рождения не может быть в будущем.")
+    @NotNull(message = "Дата рождения должна быть указана.")
     LocalDate birthday;
 
     @NotBlank(message = "Логин не может быть пустым или содержать пробелы")
