@@ -60,8 +60,8 @@ public class FilmService {
 
         Film film = getFilmById(filmId);
         User user = userStorage.getUserById(userId);
-        Optional.ofNullable(user).
-                orElseThrow(() -> new UserNotFoundException("Пользователь с id " + userId + " не найден"));
+        Optional.ofNullable(user)
+                .orElseThrow(() -> new UserNotFoundException("Пользователь с id " + userId + " не найден"));
 
         if (film.getLikes().contains(userId)) {
             log.warn("Пользователь {} уже ставил лайк фильму {}", userId, filmId);
@@ -78,8 +78,8 @@ public class FilmService {
 
         Film film = getFilmById(filmId);
         User user = userStorage.getUserById(userId);
-        Optional.ofNullable(user).
-                orElseThrow(() -> new UserNotFoundException("Пользователь с id " + userId + " не найден"));
+        Optional.ofNullable(user)
+                .orElseThrow(() -> new UserNotFoundException("Пользователь с id " + userId + " не найден"));
 
         if (!film.getLikes().remove(userId)) {
             throw new ValidationException("Лайк от пользователя " + userId + " не найден для фильма " + filmId);
