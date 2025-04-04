@@ -11,10 +11,11 @@ import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -28,60 +29,77 @@ public class FilmService {
         this.userStorage = userStorage;
     }
 
+    public Collection<Film> getAllFilms() {
+        log.info("Получение всех фильмов");
+        return filmStorage.getAllFilms();
+    }
+
+    public Film getFilmById(Long id) {
+        log.info("Получение фильма с id {}", id);
+        Film film = filmStorage.getFilmById(id);
+        return Optional.ofNullable(film)
+                .orElseThrow(() -> new FilmNotFoundException("Фильм с id " + id + " не найден"));
+    }
+
+    public Film addFilm(Film film) {
+        log.info("Добавление нового фильма: {}", film);
+        validateFilm(film);
+        return filmStorage.addFilm(film);
+    }
+
+    public Film updateFilm(Film film) {
+        log.info("Обновление фильма: {}", film);
+        validateFilm(film);
+        Film filmToUpdate = filmStorage.updateFilm(film);
+        return Optional.ofNullable(filmToUpdate)
+                .orElseThrow(() -> new FilmNotFoundException("Фильм с id " + film.getId() + " не найден"));
+    }
+
     public void addLike(Long filmId, Long userId) {
         log.info("Добавление лайка фильму {} от пользователя {}", filmId, userId);
 
-        // Проверяем существование фильма
-        Optional<Film> filmOptional = Optional.ofNullable(filmStorage.getFilmById(filmId));
-        if (filmOptional.isEmpty()) {
-            throw new FilmNotFoundException("Фильм с id " + filmId + " не найден");
-        }
-        Film film = filmOptional.get();
+        Film film = getFilmById(filmId);
+        User user = userStorage.getUserById(userId);
+        Optional.ofNullable(user).
+                orElseThrow(() -> new UserNotFoundException("Пользователь с id " + userId + " не найден"));
 
-        // Проверяем существование пользователя
-        Optional<User> userOptional = Optional.ofNullable(userStorage.getUserById(userId));
-        if (userOptional.isEmpty()) {
-            throw new UserNotFoundException("Пользователь с id " + userId + " не найден");
-        }
-
-        // Проверяем, не ставил ли пользователь лайк ранее
         if (film.getLikes().contains(userId)) {
             log.warn("Пользователь {} уже ставил лайк фильму {}", userId, filmId);
             throw new ValidationException("Пользователь уже лайкнул этот фильм");
         }
 
-        // Добавляем лайк
         film.getLikes().add(userId);
-        log.debug("Текущие лайки фильма {}: {}", filmId, film.getLikes());
+        filmStorage.updateFilm(film);
+        log.debug("Лайк добавлен. Текущие лайки фильма {}: {}", filmId, film.getLikes());
     }
 
     public void removeLike(Long filmId, Long userId) {
-        // Проверяем существование фильма
-        Optional<Film> filmOptional = Optional.ofNullable(filmStorage.getFilmById(filmId));
-        if (filmOptional.isEmpty()) {
-            throw new FilmNotFoundException("Фильм с id " + filmId + " не найден");
-        }
-        Film film = filmOptional.get();
+        log.info("Удаление лайка фильму {} от пользователя {}", filmId, userId);
 
-        // Проверяем существование пользователя
-        Optional<User> userOptional = Optional.ofNullable(userStorage.getUserById(userId));
-        if (userOptional.isEmpty()) {
-            throw new UserNotFoundException("Пользователь с id " + userId + " не найден");
-        }
+        Film film = getFilmById(filmId);
+        User user = userStorage.getUserById(userId);
+        Optional.ofNullable(user).
+                orElseThrow(() -> new UserNotFoundException("Пользователь с id " + userId + " не найден"));
 
-        // Удаляем лайк и проверяем его существование
         if (!film.getLikes().remove(userId)) {
             throw new ValidationException("Лайк от пользователя " + userId + " не найден для фильма " + filmId);
         }
+
+        filmStorage.updateFilm(film);
     }
 
     public List<Film> getPopularFilms(int count) {
         log.info("Запрос {} самых популярных фильмов", count);
-        List<Film> films = new ArrayList<>(filmStorage.getAllFilms());
-        films.sort(Comparator.comparingInt(f -> -f.getLikes().size()));
 
-        List<Film> result = films.subList(0, Math.min(count, films.size()));
-        log.debug("Список популярных фильмов: {}", result);
-        return result;
+        return filmStorage.getAllFilms().stream()
+                .sorted(Comparator.comparingInt((Film f) -> f.getLikes().size()).reversed())
+                .limit(count > 0 ? count : 10)
+                .collect(Collectors.toList());
+    }
+
+    private void validateFilm(Film film) {
+        if (film == null) {
+            throw new ValidationException("Фильм не может быть null");
+        }
     }
 }
