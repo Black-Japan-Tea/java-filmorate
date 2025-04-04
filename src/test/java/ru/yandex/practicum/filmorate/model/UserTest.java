@@ -45,8 +45,8 @@ class UserTest {
 
         Set<ConstraintViolation<User>> violations = validator.validate(user);
         assertFalse(violations.isEmpty());
-        assertEquals(1, violations.size());
-        assertEquals("Логин не может быть пустым или содержать пробелы",
+        assertEquals(2, violations.size());
+        assertEquals("Логин не может содержать пробелы",
                 violations.iterator().next().getMessage());
     }
 
