@@ -9,18 +9,18 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Slf4j
 @RestControllerAdvice
 public class ErrorHandler {
-    @ExceptionHandler
+    @ExceptionHandler(ValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse handleValidationException(final ValidationException e) {
-        log.warn("Ошибка валидации: {}", e.getMessage());
-        return new ErrorResponse("Ошибка валидации", e.getMessage());
+    public ErrorResponse handleValidationException(ValidationException ex) {
+        log.warn("Ошибка валидации: {}", ex.getMessage());
+        return new ErrorResponse("Validation error", ex.getMessage());
     }
 
     @ExceptionHandler({UserNotFoundException.class, FilmNotFoundException.class})
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ErrorResponse handleNotFoundException(final RuntimeException e) {
-        log.warn("Объект не найден: {}", e.getMessage());
-        return new ErrorResponse("Объект не найден", e.getMessage());
+    public ErrorResponse handleNotFoundException(RuntimeException ex) {
+        log.warn("Объект не найден: {}", ex.getMessage());
+        return new ErrorResponse("Not found", ex.getMessage());
     }
 
     @ExceptionHandler

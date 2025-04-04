@@ -3,13 +3,11 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exception.UserNotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -26,31 +24,56 @@ public class UserService {
         log.info("Добавление в друзья: пользователь {} добавляет пользователя {}", userId, friendId);
         try {
             User user = userStorage.getUserById(userId);
-            User friend = userStorage.getUserById(friendId);
-
             user.getFriends().add(friendId);
-            friend.getFriends().add(userId);
             log.debug("Текущий список друзей пользователя {}: {}", userId, user.getFriends());
+        } catch (RuntimeException e) {
+            throw new UserNotFoundException("User not found");
+        }
+        try {
+            User friend = userStorage.getUserById(friendId);
+            friend.getFriends().add(userId);
             log.debug("Текущий список друзей пользователя {}: {}", friendId, friend.getFriends());
-        } catch (Throwable e) {
-            log.error("Ошибка при добавлении в друзья: {}", e.getMessage());
-            throw e;
+        } catch (RuntimeException e) {
+            throw new UserNotFoundException("Friend not found");
         }
     }
 
     public void removeFriend(Long userId, Long friendId) {
-        User user = userStorage.getUserById(userId);
-        User friend = userStorage.getUserById(friendId);
+        // Получаем пользователя и проверяем его существование
+        Optional<User> userOptional = Optional.ofNullable(userStorage.getUserById(userId));
+        if (userOptional.isEmpty()) {
+            throw new UserNotFoundException("User with id " + userId + " not found");
+        }
+        User user = userOptional.get();
 
+        // Получаем друга и проверяем его существование
+        Optional<User> friendOptional = Optional.ofNullable(userStorage.getUserById(friendId));
+        if (friendOptional.isEmpty()) {
+            throw new UserNotFoundException("Friend with id " + friendId + " not found");
+        }
+        User friend = friendOptional.get();
+
+        // Удаляем дружбу в обе стороны (не проверяем, существовала ли она)
         user.getFriends().remove(friendId);
         friend.getFriends().remove(userId);
     }
 
     public List<User> getFriends(Long userId) {
-        User user = userStorage.getUserById(userId);
+        // Получаем пользователя и проверяем его существование
+        Optional<User> userOptional = Optional.ofNullable(userStorage.getUserById(userId));
+        if (userOptional.isEmpty()) {
+            throw new UserNotFoundException("User with id " + userId + " not found");
+        }
+        User user = userOptional.get();
+
         List<User> friends = new ArrayList<>();
         for (Long friendId : user.getFriends()) {
-            friends.add(userStorage.getUserById(friendId));
+            // Для каждого друга проверяем его существование
+            Optional<User> friendOptional = Optional.ofNullable(userStorage.getUserById(friendId));
+            if (friendOptional.isEmpty()) {
+                throw new UserNotFoundException("Friend with id " + friendId + " not found");
+            }
+            friends.add(friendOptional.get());
         }
         return friends;
     }
