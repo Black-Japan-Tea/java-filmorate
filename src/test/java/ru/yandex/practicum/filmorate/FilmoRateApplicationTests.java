@@ -132,7 +132,7 @@ public class FilmoRateApplicationTests {
         Set<User> fList = userStorage.getUserFriends(1);
 
         assertThat(uList1).containsAll(fList.stream()
-                .map(user -> user.getId())
+                .map(User::getId)
                 .toList());
 
         userStorage.deleteFriend(1, 2);
@@ -265,9 +265,7 @@ public class FilmoRateApplicationTests {
 
         for (int i = 10; i > 0; i--) {
             Optional<Film> optionalFilm = filmDbStorage.getFilmById(i);
-            if (optionalFilm.isPresent()) {
-                fList.add(optionalFilm.get());
-            }
+            optionalFilm.ifPresent(fList::add);
         }
 
         assertThat(filmDbStorage.getTopFilms(10)).containsExactlyElementsOf(fList);
