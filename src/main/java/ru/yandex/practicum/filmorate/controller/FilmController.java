@@ -17,6 +17,7 @@ public class FilmController {
 
     private final FilmService filmService;
 
+
     @PostMapping
     public FilmResponseDTO createFilm(@RequestBody @Valid NewFilmRequestDTO newFilmDTO) {
         return filmService.createFilm(newFilmDTO);
@@ -33,14 +34,16 @@ public class FilmController {
     }
 
     @GetMapping("/{filmId}")
-    public FilmResponseDTO getFilmById(@PathVariable long filmId) {
+    public FilmResponseDTO getFilById(@PathVariable long filmId) {
         return filmService.getFilmById(filmId);
     }
+
 
     @GetMapping("/popular")
     public Collection<FilmResponseDTO> getTopFilms(@RequestParam(required = false) Integer count) {
         return filmService.getTopFilms(count);
     }
+
 
     @PutMapping("/{filmId}/like/{userId}")
     public void addUserLike(@PathVariable long filmId, @PathVariable long userId) {
@@ -51,4 +54,5 @@ public class FilmController {
     public void deleteUserLike(@PathVariable long filmId, @PathVariable long userId) {
         filmService.deleteUserLike(filmId, userId);
     }
+
 }

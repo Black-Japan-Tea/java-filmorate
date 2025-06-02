@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Positive;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.hibernate.validator.constraints.Length;
+import ru.yandex.practicum.filmorate.Configuration;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -20,6 +22,7 @@ public class Film {
     @NotBlank
     private String name;
 
+    @Length(max = Configuration.FILM_DESCRIPTION_LENGTH)
     private String description;
 
     @NotNull

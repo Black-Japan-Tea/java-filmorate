@@ -87,8 +87,6 @@ public class UserService {
             throw new ValidationException("User already have a friend with id=" + friendId);
         }
 
-
-        // добавляем пользователю друга
         boolean friendWasAddedToUser = userStorage.addFriend(userId, friendId);
         if (!friendWasAddedToUser) {
             throw new StorageException("Friend with id=" + friendId + " wasn't added to User with id=" + userId);
@@ -104,18 +102,15 @@ public class UserService {
             throw new ValidationException("User can't be a friend to himself");
         }
 
-        // всё хорошо, если друга и не было (это чтобы работали тесты), хотя я считаю тут должна быть ValidationException
         if (!isUserHaveFriend(userId, friendId)) {
             return;
         }
 
-        // удаляем друга у пользователя
         boolean friendWasDeletedFromUser = userStorage.deleteFriend(userId, friendId);
         if (!friendWasDeletedFromUser) {
             throw new StorageException("Friend with id=" + friendId + " wasn't deleted from User with id=" + userId);
         }
 
-        // удаляем пользователя у бывшего друга, если он у него есть
         if (isUserHaveFriend(friendId, userId)) {
             boolean userWasDeletedFromExFriendUser = userStorage.deleteFriend(friendId, userId);
             if (!userWasDeletedFromExFriendUser) {

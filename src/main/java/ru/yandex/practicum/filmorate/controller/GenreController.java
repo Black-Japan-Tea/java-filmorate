@@ -25,4 +25,5 @@ public class GenreController {
     public GenreResponseDTO getGenreById(@PathVariable int genreId) {
         return genreService.getGenreDTOById(genreId);
     }
+
 }

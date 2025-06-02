@@ -15,6 +15,7 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Repository
@@ -47,7 +48,7 @@ public class FilmRepository {
             return stmt;
         }, keyHolder);
 
-        return keyHolder.getKey().longValue();
+        return Objects.requireNonNull(keyHolder.getKey()).longValue();
     }
 
     public boolean updateFilm(Film filmToUpdate) {
@@ -81,8 +82,10 @@ public class FilmRepository {
         return count;
     }
 
+
     public Optional<Film> getFilmById(long filmId) {
         String queryFilm = "SELECT FILM_ID, NAME, DESCRIPTION, RELEASE_DATE, DURATION, MPA_RATE FROM FILMS WHERE film_id=?";
+
 
         Optional<Film> optionalFilm;
         optionalFilm = Optional.ofNullable(jdbcTemplate.queryForObject(queryFilm, filmRowMapper, filmId));
@@ -91,21 +94,19 @@ public class FilmRepository {
 
             Film film = optionalFilm.get();
 
-            // Заполняем рейтинг
             Optional<MpaRate> optionalMpaRate = getMpaRateById(film.getMpaRate().getId());
-            if (optionalMpaRate.isPresent()) {
-                film.setMpaRate(optionalMpaRate.get());
-            }
+            optionalMpaRate.ifPresent(film::setMpaRate);
 
         }
+
         return optionalFilm;
     }
 
+
     private List<Long> getFilmLikes(Long filmId) {
         String queryLikes = "SELECT USER_ID FROM FILMS_LIKES WHERE film_id=?";
-        var filmLikes = jdbcTemplate.queryForList(queryLikes, Long.class, filmId);
 
-        return filmLikes;
+        return jdbcTemplate.queryForList(queryLikes, Long.class, filmId);
     }
 
     public Optional<MpaRate> getMpaRateById(int mpaId) {
@@ -114,12 +115,12 @@ public class FilmRepository {
         List<MpaRate> result = jdbcTemplate.query(queryMpaRate, mpaRateRowMapper, mpaId);
 
         return result.stream().findFirst();
+
     }
 
     public Collection<MpaRate> getMpaRates() {
         String queryMpaRates = "SELECT mpa_id, name FROM MPA_RATE";
-        var mpaRates = jdbcTemplate.query(queryMpaRates, mpaRateRowMapper);
-        return mpaRates;
+        return jdbcTemplate.query(queryMpaRates, mpaRateRowMapper);
     }
 
     public Optional<Genre> getGenreById(int genreId) {
@@ -132,9 +133,7 @@ public class FilmRepository {
     public Collection<Genre> getGenres() {
         String queryGenre = "SELECT genre_id, name FROM GENRES";
 
-        var geners = jdbcTemplate.query(queryGenre, genreRowMapper);
-
-        return geners;
+        return jdbcTemplate.query(queryGenre, genreRowMapper);
     }
 
 
@@ -143,12 +142,13 @@ public class FilmRepository {
                 "values (?, ?)";
 
         genres.stream()
-                .distinct()  // добавляем только уникальные жанры
+                .distinct()
                 .forEach(genre -> {
                     if (!isGenreIndexOK(genre.getId())) {
                         throw new NotFoundException("GENRE_ID index = " + genre.getId() + " not found");
                     }
                     jdbcTemplate.update(sqlString, filmId, genre.getId());
+
                 });
     }
 
@@ -157,9 +157,7 @@ public class FilmRepository {
                 "JOIN GENRES g ON fg.GENRE_ID = g.GENRE_ID " +
                 "WHERE fg.FILM_ID=?";
 
-        var filmGenres = jdbcTemplate.query(queryFilmGenres, genreRowMapper, filmId);
-
-        return filmGenres;
+        return jdbcTemplate.query(queryFilmGenres, genreRowMapper, filmId);
     }
 
     public int addFilmUserLikes(Long filmId, Long userId) {
@@ -191,6 +189,7 @@ public class FilmRepository {
         if (count == null) {
             return false;
         }
+
         return mpaRateIndex > count;
     }
 
@@ -203,7 +202,9 @@ public class FilmRepository {
         if (count == null) {
             return false;
         }
+
         return !(genreIndex > count);
+
     }
 
     public Collection<Film> getTopFilms(int count) {

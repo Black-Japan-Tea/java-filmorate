@@ -45,6 +45,4 @@ public class GenreMapper {
                 .name(genre.getName())
                 .build();
     }
-
-
 }

@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.Configuration;
 import ru.yandex.practicum.filmorate.dto.film.FilmResponseDTO;
 import ru.yandex.practicum.filmorate.dto.film.NewFilmRequestDTO;
 import ru.yandex.practicum.filmorate.dto.film.UpdateFilmRequestDTO;
@@ -21,14 +22,18 @@ import java.util.Optional;
 @Service
 public class FilmService {
 
+    private final Configuration config;
     private final FilmStorage filmStorage;
     private final UserService userService;
     private final FilmMapper filmMapper;
 
 
-    public FilmService(@Qualifier("filmDbStorage") FilmStorage filmStorage,
-                       UserService userService, FilmMapper filmMapper) {
+    public FilmService(Configuration config,
+                       @Qualifier("filmDbStorage") FilmStorage filmStorage,
+                       UserService userService,
+                       FilmMapper filmMapper) {
 
+        this.config = config;
         this.filmStorage = filmStorage;
         this.userService = userService;
         this.filmMapper = filmMapper;
@@ -67,6 +72,9 @@ public class FilmService {
     }
 
     public Collection<FilmResponseDTO> getTopFilms(Integer count) {
+        if (count == null) {
+            count = config.getDefaultTopFilmCount();
+        }
         return filmMapper.toFilmResponseDTO(filmStorage.getTopFilms(count));
     }
 

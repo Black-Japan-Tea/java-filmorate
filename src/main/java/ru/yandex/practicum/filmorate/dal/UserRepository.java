@@ -14,6 +14,7 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
@@ -36,6 +37,7 @@ public class UserRepository {
         return user;
     }
 
+
     public Collection<User> getAllUsers() {
         String sqlString = "SELECT USER_ID, NAME, EMAIL, LOGIN, BIRTHDAY FROM USERS";
 
@@ -46,6 +48,7 @@ public class UserRepository {
 
         String sqlString = "INSERT INTO users(NAME, EMAIL, LOGIN, BIRTHDAY) " +
                 "values (?, ?, ?, ?)";
+
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
@@ -58,7 +61,8 @@ public class UserRepository {
             return stmt;
         }, keyHolder);
 
-        return keyHolder.getKey().longValue();
+
+        return Objects.requireNonNull(keyHolder.getKey()).longValue();
     }
 
     public boolean addFriend(long userId, long friendId) {

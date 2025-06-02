@@ -25,4 +25,5 @@ public class MpaController {
     public MpaRateResponseDTO getMpaById(@PathVariable int mpaId) {
         return mpaRateService.getMpaRateDTOById(mpaId);
     }
+
 }
