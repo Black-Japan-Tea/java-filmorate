@@ -1,65 +1,68 @@
 package ru.yandex.practicum.filmorate.storage.user;
 
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exception.UserNotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
-@Slf4j
 @Component
+@Qualifier("inMemoryUserStorage")
 public class InMemoryUserStorage implements UserStorage {
 
-    private final Map<Long, User> users = new HashMap<>();
+    private final HashMap<Long, User> users = new HashMap<>();
+    private Long userId = 1L;
 
     @Override
-    public Collection<User> getAllUsers() {
+    public Long createUser(User newUser) {
+        newUser.setId(userId++);
+        newUser.setFriends(new HashSet<>());
+        users.put(newUser.getId(), newUser);
+        return newUser.getId();
+    }
+
+    @Override
+    public Collection<User> getUsers() {
         return users.values();
     }
 
     @Override
-    public User createUser(User user) {
-        validateUser(user);
-        user.setId(getNextId());
-        users.put(user.getId(), user);
-        log.info("Создан новый пользователь с ID: {}", user.getId());
-        log.debug("Данные пользователя: {}", user);
-        return user;
+    public boolean updateUser(User userToUpdate) {
+        if (userToUpdate.getFriends() == null) {
+            userToUpdate.setFriends(new HashSet<>());
+        }
+        users.put(userToUpdate.getId(), userToUpdate);
+        return true;
     }
 
     @Override
-    public User updateUser(User user) {
-        if (user.getId() == null || !users.containsKey(user.getId())) {
-            log.warn("Попытка обновления несуществующего пользователя с ID: {}", user.getId());
-            throw new UserNotFoundException("User with id " + user.getId() + " not found");
+    public Optional<User> findUserById(long id) {
+        Optional<User> userOptional = Optional.empty();
+
+        if (users.containsKey(id)) {
+            userOptional = Optional.of(users.get(id));
         }
-        validateUser(user);
-        users.put(user.getId(), user);
-        log.info("Обновлены данные пользователя с ID: {}", user.getId());
-        log.debug("Новые данные пользователя: {}", user);
-        return user;
+        return userOptional;
     }
 
     @Override
-    public User getUserById(long id) {
-        return users.get(id);
+    public boolean addFriend(long userId, long friendId) {
+        users.get(userId).getFriends().add(friendId);
+        return true;
     }
 
-    private void validateUser(User user) {
-        if (user.getName() == null || user.getName().isBlank()) {
-            user.setName(user.getLogin());
-        }
+    @Override
+    public boolean deleteFriend(long userId, long friendId) {
+        users.get(userId).getFriends().remove(friendId);
+        return true;
     }
 
-    private long getNextId() {
-        long currentMaxId = users.keySet()
+    @Override
+    public Set<User> getUserFriends(long userId) {
+        return users.get(userId).getFriends()
                 .stream()
-                .mapToLong(id -> id)
-                .max()
-                .orElse(0);
-        return ++currentMaxId;
+                .map(users::get)
+                .collect(Collectors.toSet());
     }
 }

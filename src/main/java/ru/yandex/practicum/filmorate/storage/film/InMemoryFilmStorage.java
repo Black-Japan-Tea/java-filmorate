@@ -1,69 +1,94 @@
 package ru.yandex.practicum.filmorate.storage.film;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exception.FilmNotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.MpaRate;
 
-import java.time.LocalDate;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
+@Qualifier("inMemoryFilmStorage")
 public class InMemoryFilmStorage implements FilmStorage {
 
-    private final Map<Long, Film> films = new HashMap<>();
+    private final HashMap<Long, Film> films = new HashMap<>();
+    private Long filmId = 1L;
 
     @Override
-    public Collection<Film> getAllFilms() {
+    public Long createFilm(Film newFilm) {
+        newFilm.setId(filmId++);
+        newFilm.setUsersLikes(new ArrayList<>());
+        films.put(newFilm.getId(), newFilm);
+        return newFilm.getId();
+    }
+
+    @Override
+    public Collection<Film> getFilms() {
         return films.values();
     }
 
     @Override
-    public Film addFilm(Film film) {
-        validateFilm(film);
-        film.setId(getNextId());
-        films.put(film.getId(), film);
-        return film;
-    }
-
-    @Override
-    public Film updateFilm(Film film) {
-        if (film.getId() == null || !films.containsKey(film.getId())) {
-            throw new FilmNotFoundException("Фильм с указанным id не существует.");
-        }
-        validateFilm(film);
-        films.put(film.getId(), film);
-        return film;
-    }
-
-    @Override
-    public Film getFilmById(long id) {
-        return films.get(id);
-    }
-
-    private void validateFilm(Film film) {
-        if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
-            throw new ValidationException("Дата релиза не может быть раньше 28 декабря 1895 года.");
-        }
-        if (film.getName() == null || film.getName().isBlank()) {
-            throw new ValidationException("Название не может быть пустым");
-        }
-        if (film.getDescription().length() > 200) {
-            throw new ValidationException("Максимальная длина описания — 200 символов");
-        }
-        if (film.getDuration() <= 0) {
-            throw new ValidationException("Продолжительность должна быть положительной");
-        }
-    }
-
-    private long getNextId() {
-        long currentMaxId = films.keySet()
+    public Collection<Film> getTopFilms(int count) {
+        return films.values()
                 .stream()
-                .mapToLong(id -> id)
-                .max()
-                .orElse(0);
-        return ++currentMaxId;
+                .sorted(Comparator.comparingInt((Film film) -> film.getUsersLikes().size()).reversed())
+                .limit(count)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Optional<MpaRate> getMpaRateById(int mpaId) {
+        return Optional.empty();
+    }
+
+    @Override
+    public Collection<MpaRate> getMpaRates() {
+        return List.of();
+    }
+
+    @Override
+    public Optional<Genre> getGenreById(int mpaId) {
+        return Optional.empty();
+    }
+
+    @Override
+    public Collection<Genre> getGenres() {
+        return List.of();
+    }
+
+    @Override
+    public boolean updateFilm(Film filmToUpdate) {
+        if (filmToUpdate.getUsersLikes() == null) {
+            filmToUpdate.setUsersLikes(new ArrayList<>());
+        }
+        films.put(filmToUpdate.getId(), filmToUpdate);
+        return true;
+    }
+
+    @Override
+    public Optional<Film> getFilmById(long id) {
+        if (films.containsKey(id)) {
+            return Optional.of(films.get(id));
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public int getFilmsCount() {
+        return films.size();
+    }
+
+    @Override
+    public int addUserLike(long filmId, long userId) {
+        films.get(filmId).getUsersLikes().add(userId);
+        return 1;
+    }
+
+    @Override
+    public boolean deleteUserLike(long filmId, long userId) {
+        films.get(filmId).getUsersLikes().remove(userId);
+        return true;
     }
 }
