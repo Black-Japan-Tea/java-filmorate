@@ -26,7 +26,7 @@ public class UserRepository {
 
     public Optional<User> getUserById(long userId) {
 
-        String sqlString = "SELECT USER_ID, NAME, EMAIL, LOGIN, BIRTHDAY FROM USERS WHERE user_id=?";
+        String sqlString = "SELECT user_id, name, email, login, birthday FROM users WHERE user_id=?";
 
         Optional<User> user;
         try {
@@ -39,21 +39,21 @@ public class UserRepository {
 
 
     public Collection<User> getAllUsers() {
-        String sqlString = "SELECT USER_ID, NAME, EMAIL, LOGIN, BIRTHDAY FROM USERS";
+        String sqlString = "SELECT user_id, name, email, login, birthday FROM users";
 
         return jdbcTemplate.query(sqlString, userRowMapper);
     }
 
     public long createUser(User newUser) {
 
-        String sqlString = "INSERT INTO users(NAME, EMAIL, LOGIN, BIRTHDAY) " +
+        String sqlString = "INSERT INTO users(name, email, login, birthday) " +
                 "values (?, ?, ?, ?)";
 
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcTemplate.update(connection -> {
-            PreparedStatement stmt = connection.prepareStatement(sqlString, new String[]{"USER_ID"});
+            PreparedStatement stmt = connection.prepareStatement(sqlString, new String[]{"user_id"});
             stmt.setString(1, newUser.getName());
             stmt.setString(2, newUser.getEmail());
             stmt.setString(3, newUser.getLogin());
@@ -75,20 +75,20 @@ public class UserRepository {
 
     public List<User> getUserFriends(long userId) {
 
-        String sqlString = "SELECT u.* FROM USERS u JOIN USERS_FRIENDS uf ON u.USER_ID = uf.FRIEND_ID WHERE uf.USER_ID=?";
+        String sqlString = "SELECT u.* FROM users u JOIN users_friends uf ON u.user_id = uf.friend_id WHERE uf.user_id=?";
 
         return jdbcTemplate.query(sqlString, userRowMapper, userId);
     }
 
     public boolean deleteFriend(long userId, long friendId) {
-        String sqlString = "DELETE FROM USERS_FRIENDS WHERE USER_ID=? AND FRIEND_ID=?";
+        String sqlString = "DELETE FROM users_friends WHERE user_id=? AND friend_id=?";
 
         return jdbcTemplate.update(sqlString, userId, friendId) > 0;
     }
 
     public boolean updateUser(User userToUpdate) {
 
-        String sqlString = "UPDATE users SET NAME=?, EMAIL=?, LOGIN=?, BIRTHDAY=? WHERE USER_ID=" + userToUpdate.getId();
+        String sqlString = "UPDATE users SET name=?, email=?, login=?, birthday=? WHERE user_id=" + userToUpdate.getId();
 
         int answer = jdbcTemplate.update(sqlString,
                 userToUpdate.getName(),

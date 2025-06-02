@@ -15,7 +15,6 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @Repository
@@ -30,16 +29,16 @@ public class FilmRepository {
     public long createFilm(Film newFilm) {
 
         if (isMpaRateIndexNotOK(newFilm.getMpaRate().getId())) {
-            throw new NotFoundException("MPA_RATE index = " + newFilm.getMpaRate().getId() + " not found");
+            throw new NotFoundException("mpa_rate index = " + newFilm.getMpaRate().getId() + " not found");
         }
 
-        String sqlString = "INSERT INTO FILMS(NAME, DESCRIPTION, RELEASE_DATE, DURATION, MPA_RATE) " +
+        String sqlString = "INSERT INTO films(name, description, release_date, duration, mpa_rate) " +
                 "values (?, ?, ?, ?, ?)";
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcTemplate.update(connection -> {
-            PreparedStatement stmt = connection.prepareStatement(sqlString, new String[]{"FILM_ID"});
+            PreparedStatement stmt = connection.prepareStatement(sqlString, new String[]{"film_id"});
             stmt.setString(1, newFilm.getName());
             stmt.setString(2, newFilm.getDescription());
             stmt.setDate(3, Date.valueOf(newFilm.getReleaseDate()));
@@ -48,16 +47,16 @@ public class FilmRepository {
             return stmt;
         }, keyHolder);
 
-        return Objects.requireNonNull(keyHolder.getKey()).longValue();
+        return keyHolder.getKey().longValue();
     }
 
     public boolean updateFilm(Film filmToUpdate) {
 
         if (isMpaRateIndexNotOK(filmToUpdate.getMpaRate().getId())) {
-            throw new NotFoundException("MPA_RATE index = " + filmToUpdate.getMpaRate().getId() + " not found");
+            throw new NotFoundException("mpa_rate index = " + filmToUpdate.getMpaRate().getId() + " not found");
         }
 
-        String sqlString = "UPDATE FILMS SET NAME=?, DESCRIPTION=?, RELEASE_DATE=?, DURATION=?, MPA_RATE=?  WHERE FILM_ID=" + filmToUpdate.getId();
+        String sqlString = "UPDATE films SET name=?, description=?, release_date=?, duration=?, mpa_rate=?  WHERE film_id=" + filmToUpdate.getId();
 
         int answer = jdbcTemplate.update(sqlString,
                 filmToUpdate.getName(),
@@ -67,11 +66,14 @@ public class FilmRepository {
                 filmToUpdate.getMpaRate().getId()
         );
 
-        return answer == 1;
+        if (answer != 1) {
+            return false;
+        }
+        return true;
     }
 
     public int getFilmsCount() {
-        String sqlString = "SELECT Count(film_id) FROM FILMS";
+        String sqlString = "SELECT Count(film_id) FROM films";
         Integer count;
 
         count = jdbcTemplate.queryForObject(sqlString, Integer.class);
@@ -84,7 +86,7 @@ public class FilmRepository {
 
 
     public Optional<Film> getFilmById(long filmId) {
-        String queryFilm = "SELECT FILM_ID, NAME, DESCRIPTION, RELEASE_DATE, DURATION, MPA_RATE FROM FILMS WHERE film_id=?";
+        String queryFilm = "SELECT film_id, name, description, release_date, duration, mpa_rate FROM films WHERE film_id=?";
 
 
         Optional<Film> optionalFilm;
@@ -104,13 +106,13 @@ public class FilmRepository {
 
 
     private List<Long> getFilmLikes(Long filmId) {
-        String queryLikes = "SELECT USER_ID FROM FILMS_LIKES WHERE film_id=?";
+        String queryLikes = "SELECT user_id FROM films_likes WHERE film_id=?";
 
         return jdbcTemplate.queryForList(queryLikes, Long.class, filmId);
     }
 
     public Optional<MpaRate> getMpaRateById(int mpaId) {
-        String queryMpaRate = "SELECT mpa_id, name FROM MPA_RATE WHERE MPA_ID=?";
+        String queryMpaRate = "SELECT mpa_id, name FROM mpa_rate WHERE MPA_ID=?";
 
         List<MpaRate> result = jdbcTemplate.query(queryMpaRate, mpaRateRowMapper, mpaId);
 
@@ -119,33 +121,33 @@ public class FilmRepository {
     }
 
     public Collection<MpaRate> getMpaRates() {
-        String queryMpaRates = "SELECT mpa_id, name FROM MPA_RATE";
+        String queryMpaRates = "SELECT mpa_id, name FROM mpa_rate";
         return jdbcTemplate.query(queryMpaRates, mpaRateRowMapper);
     }
 
     public Optional<Genre> getGenreById(int genreId) {
-        String queryGenre = "SELECT genre_id, name FROM GENRES WHERE GENRE_ID=?";
+        String queryGenre = "SELECT genre_id, name FROM genres WHERE genre_id=?";
         List<Genre> result = jdbcTemplate.query(queryGenre, genreRowMapper, genreId);
 
         return result.stream().findFirst();
     }
 
     public Collection<Genre> getGenres() {
-        String queryGenre = "SELECT genre_id, name FROM GENRES";
+        String queryGenre = "SELECT genre_id, name FROM genres";
 
         return jdbcTemplate.query(queryGenre, genreRowMapper);
     }
 
 
     public void addFilmGenres(Long filmId, List<Genre> genres) {
-        String sqlString = "INSERT INTO FILMS_GENRES(FILM_ID, GENRE_ID) " +
+        String sqlString = "INSERT INTO films_genres(film_id, genre_id) " +
                 "values (?, ?)";
 
         genres.stream()
-                .distinct()
+                .distinct()  // добавляем только уникальные жанры
                 .forEach(genre -> {
                     if (!isGenreIndexOK(genre.getId())) {
-                        throw new NotFoundException("GENRE_ID index = " + genre.getId() + " not found");
+                        throw new NotFoundException("genre_id index = " + genre.getId() + " not found");
                     }
                     jdbcTemplate.update(sqlString, filmId, genre.getId());
 
@@ -153,34 +155,34 @@ public class FilmRepository {
     }
 
     public List<Genre> getFilmGenres(Long filmId) {
-        String queryFilmGenres = "SELECT g.GENRE_ID, g.NAME FROM FILMS_GENRES fg " +
-                "JOIN GENRES g ON fg.GENRE_ID = g.GENRE_ID " +
-                "WHERE fg.FILM_ID=?";
+        String queryFilmGenres = "SELECT g.genre_id, g.name FROM films_genres fg " +
+                "JOIN genres g ON fg.genre_id = g.genre_id " +
+                "WHERE fg.film_id=?";
 
         return jdbcTemplate.query(queryFilmGenres, genreRowMapper, filmId);
     }
 
     public int addFilmUserLikes(Long filmId, Long userId) {
-        String sqlString = "INSERT INTO FILMS_LIKES(FILM_ID, USER_ID) " +
+        String sqlString = "INSERT INTO films_likes(film_id, user_id) " +
                 "values (?, ?)";
 
         return jdbcTemplate.update(sqlString, filmId, userId);
     }
 
     public List<Long> getFilmUserLikes(long filmId) {
-        String queryFilmUserLikes = "SELECT USER_ID FROM FILMS_LIKES WHERE FILM_ID=?";
+        String queryFilmUserLikes = "SELECT user_id FROM films_likes WHERE film_id=?";
 
         return jdbcTemplate.queryForList(queryFilmUserLikes, Long.class, filmId);
     }
 
     public Collection<Film> getAllFilms() {
-        String sqlString = "SELECT FILM_ID, NAME, DESCRIPTION, RELEASE_DATE, DURATION, MPA_RATE FROM FILMS";
+        String sqlString = "SELECT film_id, name, description, release_date, duration, mpa_rate FROM films";
 
         return jdbcTemplate.query(sqlString, filmRowMapper);
     }
 
     private boolean isMpaRateIndexNotOK(int mpaRateIndex) {
-        String sqlString = "SELECT Count(MPA_ID) FROM MPA_RATE";
+        String sqlString = "SELECT Count(MPA_ID) FROM mpa_rate";
         Integer count;
 
 
@@ -194,7 +196,7 @@ public class FilmRepository {
     }
 
     private boolean isGenreIndexOK(int genreIndex) {
-        String sqlString = "SELECT Count(GENRE_ID) FROM GENRES";
+        String sqlString = "SELECT COUNT(genre_id) FROM genres";
         Integer count;
 
         count = jdbcTemplate.queryForObject(sqlString, Integer.class);
@@ -208,17 +210,18 @@ public class FilmRepository {
     }
 
     public Collection<Film> getTopFilms(int count) {
-        String getTopSql = "SELECT f.* FROM FILMS f " +
-                "JOIN FILMS_LIKES fl ON f.FILM_ID = fl.FILM_ID " +
-                "GROUP BY f.FILM_ID " +
-                "ORDER BY COUNT(USER_ID) DESC " +
+        String getTopSql = "SELECT f.* FROM films f " +
+                "JOIN films_likes fl ON f.film_id = fl.film_id " +
+                "GROUP BY f.film_id " +
+                "ORDER BY COUNT(user_id) DESC " +
                 "LIMIT ?";
         return jdbcTemplate.query(getTopSql, filmRowMapper, count);
     }
 
     public boolean deleteUserLike(long filmId, long userId) {
-        String deleteUserLikeSql = "DELETE FROM FILMS_LIKES " +
-                "WHERE FILM_ID=? AND USER_ID=?";
+        String deleteUserLikeSql = "DELETE FROM films_likes " +
+                "WHERE film_id=? AND user_id=?";
+
 
         return jdbcTemplate.update(deleteUserLikeSql, filmId, userId) > 0;
     }

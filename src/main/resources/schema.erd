@@ -1,7 +1,3 @@
-git check-attr -a src/main/resources/schema.dbml// Use DBML to define your database structure
-// Docs: https://dbml.dbdiagram.io/docs
-// This model https://dbdiagram.io/d/Filmogram-67f111cb4f7afba1847331d9
-
 Table films {
   film_id bigint [primary key]
   name varchar(255) [not null]

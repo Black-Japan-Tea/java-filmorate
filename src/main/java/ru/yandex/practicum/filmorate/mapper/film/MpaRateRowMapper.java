@@ -14,8 +14,8 @@ public class MpaRateRowMapper implements RowMapper<MpaRate> {
     public MpaRate mapRow(ResultSet rs, int rowNum) throws SQLException {
 
         return MpaRate.builder()
-                .id(rs.getInt("MPA_ID"))
-                .name(rs.getString("NAME"))
+                .id(rs.getInt("mpa_id"))
+                .name(rs.getString("name"))
                 .build();
     }
 }

@@ -1,4 +1,5 @@
-package ru.yandex.practicum.filmorate.controller;
+
+package ru.yandex.practicum.filmorate.controller.film;
 
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;

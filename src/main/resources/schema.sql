@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS films
     description  varchar(200),
     release_date date         NOT NULL,
     duration     int          NOT NULL,
-    mpa_rate     int REFERENCES MPA_RATE(mpa_id)
+    mpa_rate     int REFERENCES mpa_rate(mpa_id)
     );
 
 

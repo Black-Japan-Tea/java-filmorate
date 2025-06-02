@@ -15,13 +15,13 @@ public class FilmRowMapper implements RowMapper<Film> {
     public Film mapRow(ResultSet rs, int rowNum) throws SQLException {
 
         return Film.builder()
-                .id(rs.getLong("FILM_ID"))
-                .name(rs.getString("NAME"))
-                .description(rs.getString("DESCRIPTION"))
-                .releaseDate(rs.getDate("RELEASE_DATE").toLocalDate())
-                .duration(rs.getInt("DURATION"))
+                .id(rs.getLong("film_id"))
+                .name(rs.getString("name"))
+                .description(rs.getString("description"))
+                .releaseDate(rs.getDate("release_date").toLocalDate())
+                .duration(rs.getInt("duration"))
                 .mpaRate(MpaRate.builder()
-                        .id(rs.getInt("MPA_RATE"))
+                        .id(rs.getInt("mpa_rate"))
                         .build())
                 .build();
     }
