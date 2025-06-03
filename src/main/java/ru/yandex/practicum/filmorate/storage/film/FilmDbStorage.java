@@ -8,8 +8,8 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MpaRate;
 
-import java.util.Collection;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 @Qualifier("filmDbStorage")
@@ -95,12 +95,24 @@ public class FilmDbStorage implements FilmStorage {
         return filmRepository.getGenres();
     }
 
-
     private void addCollectionsToFilms(Collection<Film> films) {
+        if (films == null || films.isEmpty()) {
+            return;
+        }
 
-        films.forEach(film -> film.setGenres(filmRepository.getFilmGenres(film.getId())));
+        Set<Long> filmIds = films.stream()
+                .map(Film::getId)
+                .collect(Collectors.toSet());
 
-        films.forEach(film -> film.setUsersLikes(filmRepository.getFilmUserLikes(film.getId())));
+        Map<Long, List<Genre>> genresByFilmId = filmRepository.getFilmGenresByFilmIds(filmIds);
+        Map<Long, Set<Long>> likesByFilmId = filmRepository.getFilmLikesByFilmIds(filmIds);
+
+        films.forEach(film -> {
+            film.setGenres(genresByFilmId.getOrDefault(film.getId(), Collections.emptyList()));
+
+            Set<Long> likes = likesByFilmId.getOrDefault(film.getId(), Collections.emptySet());
+            film.setUsersLikes(new ArrayList<>(likes));
+        });
     }
 
     private void addCollectionsToFilm(Film film) {

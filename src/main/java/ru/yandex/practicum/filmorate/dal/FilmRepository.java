@@ -13,9 +13,7 @@ import ru.yandex.practicum.filmorate.model.MpaRate;
 
 import java.sql.Date;
 import java.sql.PreparedStatement;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Repository
 @RequiredArgsConstructor
@@ -224,5 +222,53 @@ public class FilmRepository {
 
 
         return jdbcTemplate.update(deleteUserLikeSql, filmId, userId) > 0;
+    }
+
+    public Map<Long, List<Genre>> getFilmGenresByFilmIds(Collection<Long> filmIds) {
+        if (filmIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        String inClause = String.join(",", Collections.nCopies(filmIds.size(), "?"));
+        String query = "SELECT fg.film_id, g.genre_id, g.name " +
+                "FROM films_genres fg " +
+                "JOIN genres g ON fg.genre_id = g.genre_id " +
+                "WHERE fg.film_id IN (" + inClause + ") " +
+                "ORDER BY fg.film_id, g.genre_id";
+
+        Map<Long, List<Genre>> result = new HashMap<>();
+
+        jdbcTemplate.query(query, filmIds.toArray(), rs -> {
+            Long filmId = rs.getLong("film_id");
+            Genre genre = new Genre(
+                    rs.getInt("genre_id"),
+                    rs.getString("name")
+            );
+
+            result.computeIfAbsent(filmId, k -> new ArrayList<>()).add(genre);
+        });
+
+        return result;
+    }
+
+    public Map<Long, Set<Long>> getFilmLikesByFilmIds(Collection<Long> filmIds) {
+        if (filmIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        String inClause = String.join(",", Collections.nCopies(filmIds.size(), "?"));
+        String query = "SELECT film_id, user_id FROM films_likes " +
+                "WHERE film_id IN (" + inClause + ")";
+
+        Map<Long, Set<Long>> result = new HashMap<>();
+
+        jdbcTemplate.query(query, filmIds.toArray(), rs -> {
+            Long filmId = rs.getLong("film_id");
+            Long userId = rs.getLong("user_id");
+
+            result.computeIfAbsent(filmId, k -> new HashSet<>()).add(userId);
+        });
+
+        return result;
     }
 }
