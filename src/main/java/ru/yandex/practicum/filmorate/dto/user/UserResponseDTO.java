@@ -1,4 +1,4 @@
-package ru.yandex.practicum.filmorate.model;
+package ru.yandex.practicum.filmorate.dto.user;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -6,17 +6,15 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
 import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 import java.time.LocalDate;
 import java.util.Set;
 
 @Data
 @Builder
-@EqualsAndHashCode(of = "id")
-public class User {
+public class UserResponseDTO {
 
-    private Long id;
+    private long id;
 
     @NotNull
     @Email
@@ -32,5 +30,4 @@ public class User {
     private LocalDate birthday;
 
     private Set<Long> friends;
-
 }
