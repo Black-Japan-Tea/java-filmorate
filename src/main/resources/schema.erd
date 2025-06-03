@@ -33,7 +33,7 @@ Table genres {
 }
 
 Table mpa_rate {
-  mpa_rate_id integer [primary key]
+  mpa_id integer [primary key]
   name varchar(5) [not null]
 }
 
